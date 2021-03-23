@@ -40,14 +40,59 @@ BufMgr::BufMgr(std::uint32_t bufs)
 
 
 BufMgr::~BufMgr() {
+	delete [] hashTable;
+	delete [] bufPool;
+	delete [] bufDescTable;
 }
 
 void BufMgr::advanceClock()
 {
+	clockHand = (clockHand + 1) % numBufs;
 }
 
 void BufMgr::allocBuf(FrameId & frame) 
 {
+	// check if all buffer is pinned
+	bool allIsPinned = true;
+	for(uint i = 0; i < numBufs; ++i){
+		if (bufDescTable[i].pinCnt == 0){
+			allIsPinned = false;
+			break;
+		}
+	}
+	if(allIsPinned) {
+		throw BufferExceededException(); 
+		return;
+	}
+
+	while(true){
+		advanceClock();
+		// if valid bit is not set, found frame.
+		if(!bufDescTable[clockHand].valid){
+			frame = clockHand;
+			return;
+		}
+		
+		// if refbit is set, unset it and restart the loop
+		if(bufDescTable[clockHand].refbit){
+			bufDescTable[clockHand].refbit = false;
+			continue;
+		}
+
+		// if page is pinned (pinCnt != 0), restart the loop. else we have found the frame
+		if(bufDescTable[clockHand].pinCnt){
+			continue;
+		}
+
+		// if dirty, we need to write back data first
+		if(bufDescTable[clockHand].dirty){
+			bufDescTable[clockHand].file->writePage(bufPool[clockHand]);
+		}
+
+		// found frame
+		frame = clockHand;
+		return; // Set() should be called by the caller, such as readPage()
+	}
 }
 
 	
