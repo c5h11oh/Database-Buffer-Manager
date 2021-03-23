@@ -89,9 +89,12 @@ void BufMgr::allocBuf(FrameId & frame)
 			bufDescTable[clockHand].file->writePage(bufPool[clockHand]);
 		}
 
-		// found frame
+		// update hash table
+		hashTable->remove(bufDescTable[clockHand].file, bufDescTable[clockHand].pageNo);
+
+		// return frame
 		frame = clockHand;
-		return; // Set() should be called by the caller, such as readPage()
+		return; // It's the caller's (e.g. readPage()'s) responsibility to insert new hashTable entry and call Set().
 	}
 }
 
@@ -103,6 +106,18 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 
 void BufMgr::unPinPage(File* file, const PageId pageNo, const bool dirty) 
 {
+	FrameId frameNo = 0;
+	try{
+		hashTable->lookup(file, pageNo, frameNo);
+		if(bufDescTable[frameNo].pinCnt == 0)
+			throw PageNotPinnedException(file->filename(), pageNo, frameNo);
+		--bufDescTable[frameNo].pinCnt;
+		if(dirty)
+			bufDescTable[frameNo].dirty = true;
+	}
+	catch(HashNotFoundException e){
+		return;
+	}
 }
 
 void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page) 
