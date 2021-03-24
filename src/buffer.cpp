@@ -13,6 +13,7 @@
 #include "exceptions/page_pinned_exception.h"
 #include "exceptions/bad_buffer_exception.h"
 #include "exceptions/hash_not_found_exception.h"
+#include "exceptions/invalid_page_exception.h"
 
 namespace badgerdb { 
 
@@ -140,16 +141,34 @@ void BufMgr::flushFile(File* file)
 {
 	for(FrameId i = 0; i < numBufs; ++i){
 		if(bufDescTable[i].file == file){
-			if(bufDescTable[i].dirty){
-				file->writePage(bufPool[i]);
-			}
+			try{
+				// Write dirty page and check page is valid or not
+				if(bufDescTable[i].dirty){
+					file->writePage(bufPool[i]); // If page is invalid, it will throw InvalidPageException
+					bufDescTable[i].dirty = false;
+				}
 
+				// If file is still pinned, throw exception
+				if(bufDescTable[i].pinCnt){
+					throw PagePinnedException(file->filename(), bufDescTable[i].pageNo, i);
+				}
+
+				// remove hash table entry
+				hashTable->remove(file, bufDescTable[i].pageNo);
+
+				// Clear() the bufDescTable[i]
+				bufDescTable[i].Clear();
+			}
+			catch(const InvalidPageException& e){
+				throw BadBufferException(bufDescTable[i].frameNo, bufDescTable[i].dirty, bufDescTable[i].valid, bufDescTable[i].refbit);
+			}
 		}
 	}
 }
 
 void BufMgr::disposePage(File* file, const PageId PageNo)
 {
+	
 }
 
 void BufMgr::printSelf(void) 
