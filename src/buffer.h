@@ -254,7 +254,7 @@ class BufMgr
    * @throws  PagePinnedException If any page of the file is pinned in the buffer pool 
    * @throws BadBufferException If any frame allocated to the file is found to be invalid
 	 */
-  void flushFile(const File* file);
+  void flushFile(File* file);
 
 	/**
 	 * Delete page from file and also from buffer pool if present.

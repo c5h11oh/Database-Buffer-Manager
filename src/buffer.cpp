@@ -13,6 +13,7 @@
 #include "exceptions/page_pinned_exception.h"
 #include "exceptions/bad_buffer_exception.h"
 #include "exceptions/hash_not_found_exception.h"
+#include "exceptions/invalid_page_exception.h"
 
 namespace badgerdb { 
 
@@ -89,9 +90,15 @@ void BufMgr::allocBuf(FrameId & frame)
 			bufDescTable[clockHand].file->writePage(bufPool[clockHand]);
 		}
 
-		// found frame
+		// Clear() the buffer description
+		bufDescTable[clockHand].Clear();
+
+		// remove old hash table entry
+		hashTable->remove(bufDescTable[clockHand].file, bufDescTable[clockHand].pageNo);
+
+		// return frame
 		frame = clockHand;
-		return; // Set() should be called by the caller, such as readPage()
+		return; // It's the caller's (e.g. readPage()'s) responsibility to insert new hashTable entry and call Set().
 	}
 }
 
@@ -103,18 +110,87 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 
 void BufMgr::unPinPage(File* file, const PageId pageNo, const bool dirty) 
 {
+	FrameId frameNo = 0;
+	try{
+		hashTable->lookup(file, pageNo, frameNo);
+		if(bufDescTable[frameNo].pinCnt == 0)
+			throw PageNotPinnedException(file->filename(), pageNo, frameNo);
+		--bufDescTable[frameNo].pinCnt;
+		if(dirty)
+			bufDescTable[frameNo].dirty = true;
+	}
+	catch(HashNotFoundException& e){
+		return;
+	}
 }
 
 void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page) 
 {
+	FrameId fId;
+	allocBuf(fId);
+
+	Page p = file->allocatePage();
+	pageNo = p.page_number();
+	hashTable->insert(file, pageNo, fId);
+	bufDescTable[fId].Set(file, pageNo);
+	bufPool[fId] = p;
+	page = &(bufPool[fId]);
+
+	return;
 }
 
-void BufMgr::flushFile(const File* file) 
+void BufMgr::flushFile(File* file) 
 {
+	for(FrameId i = 0; i < numBufs; ++i){
+		if(bufDescTable[i].file == file){
+			try{
+				// Write dirty page and check page is valid or not
+				if(bufDescTable[i].dirty){
+					file->writePage(bufPool[i]); // If page is invalid, it will throw InvalidPageException
+					bufDescTable[i].dirty = false;
+				}
+
+				// If file is still pinned, throw exception
+				if(bufDescTable[i].pinCnt){
+					throw PagePinnedException(file->filename(), bufDescTable[i].pageNo, i);
+				}
+
+				// remove hash table entry
+				hashTable->remove(file, bufDescTable[i].pageNo);
+
+				// Clear() the bufDescTable[i]
+				bufDescTable[i].Clear();
+			}
+			catch(const InvalidPageException& e){
+				throw BadBufferException(bufDescTable[i].frameNo, bufDescTable[i].dirty, bufDescTable[i].valid, bufDescTable[i].refbit);
+			}
+		}
+	}
 }
 
 void BufMgr::disposePage(File* file, const PageId PageNo)
 {
+	// Note: This function does not check whether the pinCnt is already 0!
+	
+	// Find if the page exists in buffer
+	FrameId fId;
+	try{
+		hashTable->lookup(file, PageNo, fId);
+		// Continue means lookup succeeded. Otherwise HashNotFoundException is thrown and execution flow goes to catch(){}.
+		
+		// Remove entries in bufDescTable, hashTable
+		bufDescTable[fId].Clear();
+		hashTable->remove(file, PageNo);
+
+		// We left bufPool[i] data in place, which may be a security issue.
+		// Now we can dispose page on disk.
+	}
+	catch(const HashNotFoundException& e){
+		// Lookup failed. We can move on disposing page on disk.
+	}
+
+	// Dispose page on disk
+	file->deletePage(PageNo);
 }
 
 void BufMgr::printSelf(void) 
