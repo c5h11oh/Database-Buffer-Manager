@@ -116,21 +116,21 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
     FrameId fId;
     try 
     {
-        hashTable.lookup(file, pageNo, fId);
+        hashTable->lookup(file, pageNo, fId);
     }
 
     //The page does not exist in the buffer pool
-    catch (HashNotFoundException e) 
+    catch (const HashNotFoundException& e) 
     {
     //Call allocBuf() to allocate a buffer frame
-    const FrameID returnValue;
+    FrameId returnValue;
     allocBuf(returnValue);
     //Call the method file->readPage() to read the page from disk into the buffer pool frame
     bufPool[returnValue] = file->readPage(returnValue);
     //Insert the page into the hashtable
-    hashTable.insert(file, pageNo, returnValue);
+    hashTable->insert(file, pageNo, returnValue);
     //Invoke Set() on the frame to set it up properly
-    bufDescTable[returnValue].Set(file, PageNo);
+    bufDescTable[returnValue].Set(file, pageNo);
     //Return a pointer to the frame containing the page via the page parameter
     page = &(bufPool[returnValue]);
     return; 
@@ -138,9 +138,9 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 
     //The page exists in the buffer pool
     //Set the appropriate refbit
-    bufDescTable[PageNo].refbit = true;
+    bufDescTable[pageNo].refbit = true;
     //Increment the pinCnt for the page
-    bufDescTable[PageNo].pinCnt++;
+    bufDescTable[pageNo].pinCnt++;
     //Return a pointer to the frame containing the page via the page parameter
     page = &(bufPool[fId]); // the "return" is here
     return;
