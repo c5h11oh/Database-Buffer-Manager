@@ -79,6 +79,7 @@ void BufMgr::allocBuf(FrameId & frame)
 			frame = clockHand;
 			return;
 		}
+        
 		
 		// if refbit is set, unset it and restart the loop
 		if(bufDescTable[clockHand].refbit){
@@ -110,7 +111,39 @@ void BufMgr::allocBuf(FrameId & frame)
 
 	
 void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
-{
+{   
+    //We want to first check if this page is already in the buffer pool
+    FrameId fId;
+    try 
+    {
+        hashTable.lookup(file, pageNo, fId);
+    }
+
+    //The page does not exist in the buffer pool
+    catch (HashNotFoundException e) 
+    {
+    //Call allocBuf() to allocate a buffer frame
+    const FrameID returnValue;
+    allocBuf(returnValue);
+    //Call the method file->readPage() to read the page from disk into the buffer pool frame
+    bufPool[returnValue] = file->readPage(returnValue);
+    //Insert the page into the hashtable
+    hashTable.insert(file, pageNo, returnValue);
+    //Invoke Set() on the frame to set it up properly
+    bufDescTable[returnValue].Set(file, PageNo);
+    //Return a pointer to the frame containing the page via the page parameter
+    page = &(bufPool[returnValue]);
+    return; 
+    }
+
+    //The page exists in the buffer pool
+    //Set the appropriate refbit
+    bufDescTable[PageNo].refbit = true;
+    //Increment the pinCnt for the page
+    bufDescTable[PageNo].pinCnt++;
+    //Return a pointer to the frame containing the page via the page parameter
+    page = &(bufPool[fId]); // the "return" is here
+    return;
 }
 
 
