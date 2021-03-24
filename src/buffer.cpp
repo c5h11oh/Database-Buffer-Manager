@@ -90,6 +90,9 @@ void BufMgr::allocBuf(FrameId & frame)
 			bufDescTable[clockHand].file->writePage(bufPool[clockHand]);
 		}
 
+		// Clear() the buffer description
+		bufDescTable[clockHand].Clear();
+
 		// remove old hash table entry
 		hashTable->remove(bufDescTable[clockHand].file, bufDescTable[clockHand].pageNo);
 
@@ -123,7 +126,6 @@ void BufMgr::unPinPage(File* file, const PageId pageNo, const bool dirty)
 
 void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page) 
 {
-	
 	FrameId fId;
 	allocBuf(fId);
 
@@ -168,7 +170,27 @@ void BufMgr::flushFile(File* file)
 
 void BufMgr::disposePage(File* file, const PageId PageNo)
 {
+	// Note: This function does not check whether the pinCnt is already 0!
 	
+	// Find if the page exists in buffer
+	FrameId fId;
+	try{
+		hashTable->lookup(file, PageNo, fId);
+		// Continue means lookup succeeded. Otherwise HashNotFoundException is thrown and execution flow goes to catch(){}.
+		
+		// Remove entries in bufDescTable, hashTable
+		bufDescTable[fId].Clear();
+		hashTable->remove(file, PageNo);
+
+		// We left bufPool[i] data in place, which may be a security issue.
+		// Now we can dispose page on disk.
+	}
+	catch(const HashNotFoundException& e){
+		// Lookup failed. We can move on disposing page on disk.
+	}
+
+	// Dispose page on disk
+	file->deletePage(PageNo);
 }
 
 void BufMgr::printSelf(void) 
