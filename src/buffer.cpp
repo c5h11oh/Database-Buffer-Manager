@@ -115,7 +115,7 @@ void BufMgr::unPinPage(File* file, const PageId pageNo, const bool dirty)
 		if(dirty)
 			bufDescTable[frameNo].dirty = true;
 	}
-	catch(HashNotFoundException e){
+	catch(HashNotFoundException& e){
 		return;
 	}
 }
@@ -136,8 +136,16 @@ void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page)
 	return;
 }
 
-void BufMgr::flushFile(const File* file) 
+void BufMgr::flushFile(File* file) 
 {
+	for(FrameId i = 0; i < numBufs; ++i){
+		if(bufDescTable[i].file == file){
+			if(bufDescTable[i].dirty){
+				file->writePage(bufPool[i]);
+			}
+
+		}
+	}
 }
 
 void BufMgr::disposePage(File* file, const PageId PageNo)
