@@ -41,6 +41,12 @@ BufMgr::BufMgr(std::uint32_t bufs)
 
 
 BufMgr::~BufMgr() {
+	for(FrameId i = 0; i < numBufs; ++i){
+		if(bufDescTable[i].dirty){
+			bufDescTable[i].file->writePage(bufPool[i]);
+		}
+	}
+	
 	delete [] hashTable;
 	delete [] bufPool;
 	delete [] bufDescTable;
