@@ -89,7 +89,7 @@ void BufMgr::allocBuf(FrameId & frame)
 			bufDescTable[clockHand].file->writePage(bufPool[clockHand]);
 		}
 
-		// update hash table
+		// remove old hash table entry
 		hashTable->remove(bufDescTable[clockHand].file, bufDescTable[clockHand].pageNo);
 
 		// return frame
@@ -122,6 +122,18 @@ void BufMgr::unPinPage(File* file, const PageId pageNo, const bool dirty)
 
 void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page) 
 {
+	
+	FrameId fId;
+	allocBuf(fId);
+
+	Page p = file->allocatePage();
+	pageNo = p.page_number();
+	hashTable->insert(file, pageNo, fId);
+	bufDescTable[fId].Set(file, pageNo);
+	bufPool[fId] = p;
+	page = &(bufPool[fId]);
+
+	return;
 }
 
 void BufMgr::flushFile(const File* file) 
