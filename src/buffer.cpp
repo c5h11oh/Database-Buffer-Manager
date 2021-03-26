@@ -126,7 +126,7 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
     FrameId returnValue;
     allocBuf(returnValue);
     //Call the method file->readPage() to read the page from disk into the buffer pool frame
-    bufPool[returnValue] = file->readPage(returnValue);
+    bufPool[returnValue] = file->readPage(pageNo);
     //Insert the page into the hashtable
     hashTable->insert(file, pageNo, returnValue);
     //Invoke Set() on the frame to set it up properly
