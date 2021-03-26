@@ -47,7 +47,7 @@ BufMgr::~BufMgr() {
 		}
 	}
 	
-	delete [] hashTable;
+	delete hashTable;
 	delete [] bufPool;
 	delete [] bufDescTable;
 }
@@ -178,14 +178,14 @@ void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page)
 	return;
 }
 
-void BufMgr::flushFile(File* file) 
+void BufMgr::flushFile(const File* file) 
 {
 	for(FrameId i = 0; i < numBufs; ++i){
 		if(bufDescTable[i].file == file){
 			try{
 				// Write dirty page and check page is valid or not
 				if(bufDescTable[i].dirty){
-					file->writePage(bufPool[i]); // If page is invalid, it will throw InvalidPageException
+					bufDescTable[i].file->writePage(bufPool[i]); // If page is invalid, it will throw InvalidPageException
 					bufDescTable[i].dirty = false;
 				}
 
