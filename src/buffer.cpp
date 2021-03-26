@@ -7,7 +7,7 @@
 
 /**
  * Ismael Jaffri ijaffri
- * Wuh-Chwen Huang whwang8
+ * Wuh-Chwen Hwang whwang8
  * Matthew Thomas mcthomas4
  *  
  * Managing file for our Buffer Manager. "The central class which manages 
