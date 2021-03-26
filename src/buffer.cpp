@@ -97,11 +97,11 @@ void BufMgr::allocBuf(FrameId & frame)
 			bufDescTable[clockHand].file->writePage(bufPool[clockHand]);
 		}
 
-		// Clear() the buffer description
-		bufDescTable[clockHand].Clear();
-
 		// remove old hash table entry
 		hashTable->remove(bufDescTable[clockHand].file, bufDescTable[clockHand].pageNo);
+
+		// Clear() the buffer description
+		bufDescTable[clockHand].Clear();
 
 		// return frame
 		frame = clockHand;
@@ -138,9 +138,9 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 
     //The page exists in the buffer pool
     //Set the appropriate refbit
-    bufDescTable[pageNo].refbit = true;
+    bufDescTable[fId].refbit = true;
     //Increment the pinCnt for the page
-    bufDescTable[pageNo].pinCnt++;
+    bufDescTable[fId].pinCnt++;
     //Return a pointer to the frame containing the page via the page parameter
     page = &(bufPool[fId]); // the "return" is here
     return;
