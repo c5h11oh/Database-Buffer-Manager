@@ -33,6 +33,12 @@ namespace badgerdb {
 // Constructor of the class BufMgr
 //----------------------------------------
 
+/**
+ * References constructor in header file. Allocates
+ *  an array for the buffer pool with bufs 
+ * page frames and corresponding BufDesc table.  
+ *
+ */
 BufMgr::BufMgr(std::uint32_t bufs)
 	: numBufs(bufs) {
 	bufDescTable = new BufDesc[bufs];
@@ -52,7 +58,7 @@ BufMgr::BufMgr(std::uint32_t bufs)
 }
 
 /**
- * Flushes dirty pages and deallocates the buffer pool (Destructor). 
+ * Flushes dirty pages and deallocates the buffer pool and bufDesc table (Destructor). 
  *
  */
 BufMgr::~BufMgr() {
@@ -90,7 +96,7 @@ void BufMgr::advanceClock()
  */
 void BufMgr::allocBuf(FrameId & frame) 
 {
-	// check if all buffer is pinned
+	// check if all of the buffers are pinned
 	bool allIsPinned = true;
 	for(uint i = 0; i < numBufs; ++i){
 		if (bufDescTable[i].pinCnt == 0){
@@ -188,7 +194,7 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 }
 
 /**
- * Unpin a page from memory since it is no longer required for it to remain in memory.
+ * Unpin a page from memory
  *
  * @param file   	File object.
  * @param PageNo  Page number.
@@ -223,7 +229,7 @@ void BufMgr::unPinPage(File* file, const PageId pageNo, const bool dirty)
 }
 
 /**
- * Allocates a new, empty page in the file and returns the Page object.
+ * Allocates a new, empty page in the file and returns the Page object. 
  * The newly allocated page is also assigned a frame in the buffer pool.
  *
  * @param file   	File object
@@ -252,7 +258,7 @@ void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page)
 /**
 * Writes out all dirty pages of the file to disk.
 * All the frames assigned to the file need to be unpinned from buffer pool before this function can be successfully called,
-* Otherwise Error returned.
+* otherwise error returned.
 *
 * @param file   	File object
 * @throws  PagePinnedException If any page of the file is pinned in the buffer pool 
