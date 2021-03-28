@@ -4,7 +4,19 @@
  * @section LICENSE
  * Copyright (c) 2012 Database Group, Computer Sciences Department, University of Wisconsin-Madison.
  */
-
+/**
+ * Ismael Jaffri ijaffri
+ * Wuh-Chwen Hwang whwang8
+ * Matthew Thomas mcthomas4
+ *  
+ * Managing file for our Buffer Manager. "The central class which manages 
+ * the buffer pool including frame allocation and deallocation to pages in the file".
+ * This is the header file (declaration). The implementation is in `buffer.cpp`.
+ * 
+ * Controls which pages are memory resident, using the clock algorithm as
+ * a buffer replacement policy.
+ * 			
+ */
 #pragma once
 
 #include "file.h"
