@@ -1,3 +1,14 @@
+/**
+ * Ismael Jaffri ijaffri
+ * Wuh-Chwen Hwang whwang8
+ * Matthew Thomas mcthomas4
+ *  
+ * This is the driver (test cases) of the BadgerDB. It tests the file I/O, reading/writing pages, 
+ * and manipulating records. It also tests the buffer manager's APIs (public functions) by creating 
+ * a BufMgr and make CRUD accesses. All codes are given by the assignment.
+ * 			
+ */
+
 #include <iostream>
 #include <stdlib.h>
 //#include <stdio.h>
@@ -205,7 +216,7 @@ void test2()
 		rid2 = page2->insertRecord(tmpbuf);
 
 		long int index = random() % num;
-    pageno1 = pid[index];
+    	pageno1 = pid[index];
 		bufMgr->readPage(file1ptr, pageno1, page);
 		sprintf((char*)tmpbuf, "test.1 Page %u %7.1f", pageno1, (float)pageno1);
 		if(strncmp(page->getRecord(rid[index]).c_str(), tmpbuf, strlen(tmpbuf)) != 0)
@@ -320,4 +331,8 @@ void test6()
 		bufMgr->unPinPage(file1ptr, i, true);
 
 	bufMgr->flushFile(file1ptr);
+}
+
+void test8(){
+
 }

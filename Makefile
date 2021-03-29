@@ -17,6 +17,10 @@ all:
 	cd src;\
 	$(CC) $(CFLAGS) *.cpp exceptions/*.cpp -I. -o badgerdb_main
 
+debug:
+	cd src;\
+	$(CC) $(CFLAGS) *.cpp exceptions/*.cpp -I. -g -o badgerdb_main
+
 clean:
 	cd src;\
 	rm -f badgerdb_main test.?
